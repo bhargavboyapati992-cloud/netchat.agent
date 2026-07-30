@@ -1,0 +1,8 @@
+{
+  "name": "NetChat",
+  "description": "AI-Powered Virtual Teaching Assistant for Computer Networks course covering OSI Model, TCP/IP, Subnetting, Routing, Protocols \u0026 Exam Prep.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
