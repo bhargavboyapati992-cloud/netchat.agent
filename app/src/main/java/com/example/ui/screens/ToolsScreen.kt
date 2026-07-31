@@ -63,6 +63,14 @@ import com.example.data.model.CommandItem
 import com.example.data.model.SubnetResult
 import com.example.data.model.WiresharkPacketSample
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.net.Uri
+import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material3.CircularProgressIndicator
+
 @Composable
 fun ToolsScreen(
     subnetResult: SubnetResult?,
@@ -72,9 +80,13 @@ fun ToolsScreen(
     onSelectWiresharkPacket: (WiresharkPacketSample) -> Unit,
     commandCheatsheet: List<CommandItem>,
     onAskAiAboutTool: (String) -> Unit,
+    isVideoAnalyzing: Boolean = false,
+    videoAnalysisResult: String? = null,
+    selectedVideoTitle: String = "",
+    onAnalyzeVideo: (Uri?, String?, String) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
-    var toolSubTab by remember { mutableIntStateOf(0) } // 0 = Subnet, 1 = Wireshark, 2 = CLI Cheatsheet
+    var toolSubTab by remember { mutableIntStateOf(0) } // 0 = Subnet, 1 = Wireshark, 2 = CLI Cheatsheet, 3 = Video AI
 
     Column(
         modifier = modifier
@@ -90,23 +102,30 @@ fun ToolsScreen(
             Tab(
                 selected = (toolSubTab == 0),
                 onClick = { toolSubTab = 0 },
-                text = { Text("Subnet Calculator", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
-                icon = { Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                text = { Text("Subnet", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(16.dp)) },
                 modifier = Modifier.testTag("tool_tab_subnet")
             )
             Tab(
                 selected = (toolSubTab == 1),
                 onClick = { toolSubTab = 1 },
-                text = { Text("Wireshark Analyzer", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
-                icon = { Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                text = { Text("Wireshark", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(16.dp)) },
                 modifier = Modifier.testTag("tool_tab_wireshark")
             )
             Tab(
                 selected = (toolSubTab == 2),
                 onClick = { toolSubTab = 2 },
-                text = { Text("CLI Cheatsheet", fontSize = 12.sp, fontWeight = FontWeight.Bold) },
-                icon = { Icon(Icons.Default.Code, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                text = { Text("CLI Commands", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Code, contentDescription = null, modifier = Modifier.size(16.dp)) },
                 modifier = Modifier.testTag("tool_tab_cli")
+            )
+            Tab(
+                selected = (toolSubTab == 3),
+                onClick = { toolSubTab = 3 },
+                text = { Text("Video AI", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.VideoLibrary, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                modifier = Modifier.testTag("tool_tab_video_ai")
             )
         }
 
@@ -114,6 +133,13 @@ fun ToolsScreen(
             0 -> SubnetCalculatorTool(subnetResult, onCalculateSubnet, onAskAiAboutTool)
             1 -> WiresharkAnalyzerTool(wiresharkSamples, selectedPacket, onSelectWiresharkPacket, onAskAiAboutTool)
             2 -> CliCheatsheetTool(commandCheatsheet, onAskAiAboutTool)
+            3 -> VideoAnalysisTool(
+                isVideoAnalyzing = isVideoAnalyzing,
+                videoAnalysisResult = videoAnalysisResult,
+                selectedVideoTitle = selectedVideoTitle,
+                onAnalyzeVideo = onAnalyzeVideo,
+                onAskAiAboutTool = onAskAiAboutTool
+            )
         }
     }
 }
@@ -531,6 +557,221 @@ private fun CliCheatsheetTool(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun VideoAnalysisTool(
+    isVideoAnalyzing: Boolean,
+    videoAnalysisResult: String?,
+    selectedVideoTitle: String,
+    onAnalyzeVideo: (Uri?, String?, String) -> Unit,
+    onAskAiAboutTool: (String) -> Unit
+) {
+    var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedSampleTitle by remember { mutableStateOf("TCP 3-Way Handshake Animation") }
+    var customPrompt by remember { mutableStateOf("") }
+
+    val videoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            selectedUri = uri
+            selectedSampleTitle = "Uploaded Video"
+        }
+    }
+
+    val sampleVideos = listOf(
+        "TCP 3-Way Handshake Animation",
+        "Wireshark Packet Capture Tutorial",
+        "Subnetting & CIDR Calculation Visual Guide",
+        "OSPF Link State Routing Demo"
+    )
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🎬 Gemini Pro Video Understanding",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                        ) {
+                            Text(
+                                text = "gemini-3.1-pro-preview",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Upload any lecture video or choose a sample network animation. Gemini 3.1 Pro will extract key concepts, timestamps, formulas, and viva Q&A!",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Text(
+                        text = "Select Sample Video or Upload MP4/WEBM:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        sampleVideos.forEach { title ->
+                            FilterChip(
+                                selected = (selectedUri == null && selectedSampleTitle == title),
+                                onClick = {
+                                    selectedUri = null
+                                    selectedSampleTitle = title
+                                },
+                                label = { Text(title, fontSize = 11.sp) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(14.dp))
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Button(
+                        onClick = { videoPickerLauncher.launch("video/*") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("upload_video_btn"),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.UploadFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (selectedUri != null) "Uploaded Video selected" else "📁 Choose Video File from Storage (*.mp4, *.webm)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = customPrompt,
+                        onValueChange = { customPrompt = it },
+                        placeholder = { Text("Specific question or prompt (e.g. Extract timestamps and 3-way handshake steps)", fontSize = 12.sp) },
+                        label = { Text("Optional Custom Prompt") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("video_prompt_input"),
+                        singleLine = false,
+                        maxLines = 2
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Button(
+                        onClick = {
+                            onAnalyzeVideo(selectedUri, if (selectedUri != null) "Uploaded Device Video" else selectedSampleTitle, customPrompt)
+                        },
+                        enabled = !isVideoAnalyzing,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("analyze_video_gemini_btn"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        if (isVideoAnalyzing) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Gemini 3.1 Pro Analyzing Video...", fontSize = 13.sp)
+                        } else {
+                            Icon(Icons.Default.VideoLibrary, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Analyze Video with Gemini Pro", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (videoAnalysisResult != null) {
+            item {
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "✨ Gemini Pro Video Analysis Results",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            Button(
+                                onClick = {
+                                    onAskAiAboutTool("Here is my Gemini 3.1 Pro video analysis for '$selectedVideoTitle':\n\n$videoAnalysisResult\n\nPlease give me 3 practice viva questions based on this video.")
+                                },
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                            ) {
+                                Icon(Icons.Default.Psychology, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Ask Tutor", fontSize = 11.sp)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = videoAnalysisResult,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(12.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -64,198 +64,210 @@ class MainActivity : ComponentActivity() {
                     )
                 } else {
                     val navController = rememberNavController()
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentRoute = navBackStackEntry?.destination?.route ?: NavTab.CHAT.route
-                    val currentTab = NavTab.values().firstOrNull { it.route == currentRoute } ?: NavTab.CHAT
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentRoute = navBackStackEntry?.destination?.route ?: NavTab.CHAT.route
+                val currentTab = NavTab.values().firstOrNull { it.route == currentRoute } ?: NavTab.CHAT
 
-                    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-                    val coroutineScope = rememberCoroutineScope()
+                val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+                val coroutineScope = rememberCoroutineScope()
 
-                    BackHandler(enabled = drawerState.isOpen) {
-                        coroutineScope.launch { drawerState.close() }
-                    }
+                BackHandler(enabled = drawerState.isOpen) {
+                    coroutineScope.launch { drawerState.close() }
+                }
 
-                    fun navigateToTab(tab: NavTab) {
-                        if (tab.route != currentRoute) {
-                            navController.navigate(tab.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
+                fun navigateToTab(tab: NavTab) {
+                    if (tab.route != currentRoute) {
+                        navController.navigate(tab.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
                             }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                     }
+                }
 
-                    val messages by viewModel.chatMessages.collectAsStateWithLifecycle()
-                    val isGenerating by viewModel.isGenerating.collectAsStateWithLifecycle()
-                    val topics by viewModel.syllabusTopics.collectAsStateWithLifecycle()
-                    val selectedTopic by viewModel.selectedTopic.collectAsStateWithLifecycle()
-                    val subnetResult by viewModel.subnetResult.collectAsStateWithLifecycle()
-                    val wiresharkSamples by viewModel.wiresharkSamples.collectAsStateWithLifecycle()
-                    val selectedPacket by viewModel.selectedPacket.collectAsStateWithLifecycle()
-                    val commandCheatsheet by viewModel.commandCheatsheet.collectAsStateWithLifecycle()
-                    val bookmarkedMessages by viewModel.bookmarkedMessages.collectAsStateWithLifecycle()
-                    val savedNotes by viewModel.savedNotes.collectAsStateWithLifecycle()
-                    val quizResults by viewModel.quizResults.collectAsStateWithLifecycle()
-                    val uploadedDocuments by viewModel.uploadedDocuments.collectAsStateWithLifecycle()
+                val messages by viewModel.chatMessages.collectAsStateWithLifecycle()
+                val isGenerating by viewModel.isGenerating.collectAsStateWithLifecycle()
+                val topics by viewModel.syllabusTopics.collectAsStateWithLifecycle()
+                val selectedTopic by viewModel.selectedTopic.collectAsStateWithLifecycle()
+                val subnetResult by viewModel.subnetResult.collectAsStateWithLifecycle()
+                val wiresharkSamples by viewModel.wiresharkSamples.collectAsStateWithLifecycle()
+                val selectedPacket by viewModel.selectedPacket.collectAsStateWithLifecycle()
+                val commandCheatsheet by viewModel.commandCheatsheet.collectAsStateWithLifecycle()
+                val bookmarkedMessages by viewModel.bookmarkedMessages.collectAsStateWithLifecycle()
+                val savedNotes by viewModel.savedNotes.collectAsStateWithLifecycle()
+                val quizResults by viewModel.quizResults.collectAsStateWithLifecycle()
+                val uploadedDocuments by viewModel.uploadedDocuments.collectAsStateWithLifecycle()
 
-                    val firebaseUser by viewModel.firebaseUser.collectAsStateWithLifecycle()
-                    val isLiveVoiceActive by viewModel.isLiveVoiceActive.collectAsStateWithLifecycle()
-                    val liveVoiceTranscript by viewModel.liveVoiceTranscript.collectAsStateWithLifecycle()
+                val firebaseUser by viewModel.firebaseUser.collectAsStateWithLifecycle()
+                val isLiveVoiceActive by viewModel.isLiveVoiceActive.collectAsStateWithLifecycle()
+                val liveVoiceTranscript by viewModel.liveVoiceTranscript.collectAsStateWithLifecycle()
 
-                    ModalNavigationDrawer(
-                        drawerState = drawerState,
-                        drawerContent = {
-                            ChatHistoryDrawerContent(
-                                messages = messages,
-                                onSelectHistoryMessage = { selectedMsg ->
-                                    coroutineScope.launch { drawerState.close() }
-                                    navigateToTab(NavTab.CHAT)
-                                    viewModel.sendMessage(selectedMsg.text, selectedMsg.topicTag)
+                val isVideoAnalyzing by viewModel.isVideoAnalyzing.collectAsStateWithLifecycle()
+                val videoAnalysisResult by viewModel.videoAnalysisResult.collectAsStateWithLifecycle()
+                val selectedVideoTitle by viewModel.selectedVideoTitle.collectAsStateWithLifecycle()
+
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    drawerContent = {
+                        ChatHistoryDrawerContent(
+                            messages = messages,
+                            onSelectHistoryMessage = { selectedMsg ->
+                                coroutineScope.launch { drawerState.close() }
+                                navigateToTab(NavTab.CHAT)
+                                viewModel.sendMessage(selectedMsg.text, selectedMsg.topicTag)
+                            },
+                            onNewChat = {
+                                coroutineScope.launch { drawerState.close() }
+                                navigateToTab(NavTab.CHAT)
+                                viewModel.clearChat()
+                            },
+                            onClearHistory = {
+                                viewModel.clearChat()
+                            }
+                        )
+                    }
+                ) {
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        topBar = {
+                            AppHeader(
+                                currentTabTitle = currentTab.label,
+                                firebaseUser = firebaseUser,
+                                onOpenDrawer = {
+                                    coroutineScope.launch { drawerState.open() }
                                 },
-                                onNewChat = {
-                                    coroutineScope.launch { drawerState.close() }
-                                    navigateToTab(NavTab.CHAT)
-                                    viewModel.clearChat()
-                                },
-                                onClearHistory = {
-                                    viewModel.clearChat()
+                                onClearChat = if (currentTab == NavTab.CHAT) {
+                                    { viewModel.clearChat() }
+                                } else null,
+                                onOpenVoiceDialog = { viewModel.setLiveVoiceActive(true) },
+                                onSignInAnonymously = { viewModel.signInAnonymously() },
+                                onSignOut = { viewModel.signOutFirebase() },
+                                onReplaySplash = {
+                                    viewModel.setLiveVoiceActive(true)
                                 }
                             )
+                        },
+                        bottomBar = {
+                            BottomNavBar(
+                                selectedTab = currentTab,
+                                onTabSelected = { tab -> navigateToTab(tab) }
+                            )
                         }
-                    ) {
-                        Scaffold(
-                            modifier = Modifier.fillMaxSize(),
-                            topBar = {
-                                AppHeader(
-                                    currentTabTitle = currentTab.label,
-                                    firebaseUser = firebaseUser,
-                                    onOpenDrawer = {
-                                        coroutineScope.launch { drawerState.open() }
-                                    },
-                                    onClearChat = if (currentTab == NavTab.CHAT) {
-                                        { viewModel.clearChat() }
-                                    } else null,
-                                    onOpenVoiceDialog = { viewModel.setLiveVoiceActive(true) },
-                                    onSignInAnonymously = { viewModel.signInAnonymously() },
-                                    onSignOut = { viewModel.signOutFirebase() },
-                                    onReplaySplash = { showSplash = true }
-                                )
-                            },
-                            bottomBar = {
-                                BottomNavBar(
-                                    selectedTab = currentTab,
-                                    onTabSelected = { tab -> navigateToTab(tab) }
+                    ) { innerPadding ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                        ) {
+                            if (isLiveVoiceActive) {
+                                LiveVoiceDialog(
+                                    transcript = liveVoiceTranscript,
+                                    isGenerating = isGenerating,
+                                    onDismiss = { viewModel.setLiveVoiceActive(false) },
+                                    onSendVoiceQuery = { query -> viewModel.sendLiveVoiceMessage(query) }
                                 )
                             }
-                        ) { innerPadding ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(innerPadding)
+
+                            NavHost(
+                                navController = navController,
+                                startDestination = NavTab.CHAT.route,
+                                modifier = Modifier.fillMaxSize()
                             ) {
-                                if (isLiveVoiceActive) {
-                                    LiveVoiceDialog(
-                                        transcript = liveVoiceTranscript,
+                                composable(NavTab.CHAT.route) {
+                                    ChatScreen(
+                                        messages = messages,
                                         isGenerating = isGenerating,
-                                        onDismiss = { viewModel.setLiveVoiceActive(false) },
-                                        onSendVoiceQuery = { query -> viewModel.sendLiveVoiceMessage(query) }
+                                        onSendMessage = { prompt, context ->
+                                            viewModel.sendMessage(prompt, context)
+                                        },
+                                        onToggleBookmark = { id, bookmarked ->
+                                            viewModel.toggleBookmark(id, bookmarked)
+                                        },
+                                        onUploadPdf = { uri ->
+                                            viewModel.uploadDocumentFromUri(uri)
+                                        }
                                     )
                                 }
-
-                                NavHost(
-                                    navController = navController,
-                                    startDestination = NavTab.CHAT.route,
-                                    modifier = Modifier.fillMaxSize()
-                                ) {
-                                    composable(NavTab.CHAT.route) {
-                                        ChatScreen(
-                                            messages = messages,
-                                            isGenerating = isGenerating,
-                                            onSendMessage = { prompt, context ->
-                                                viewModel.sendMessage(prompt, context)
-                                            },
-                                            onToggleBookmark = { id, bookmarked ->
-                                                viewModel.toggleBookmark(id, bookmarked)
-                                            },
-                                            onUploadPdf = { uri ->
-                                                viewModel.uploadDocumentFromUri(uri)
-                                            }
-                                        )
-                                    }
-                                    composable(NavTab.SYLLABUS.route) {
-                                        SyllabusScreen(
-                                            topics = topics,
-                                            selectedTopic = selectedTopic,
-                                            uploadedDocuments = uploadedDocuments,
-                                            onTopicSelected = { viewModel.selectTopic(it) },
-                                            onAskAiAboutTopic = { query ->
-                                                navigateToTab(NavTab.CHAT)
-                                                viewModel.sendMessage(query, selectedTopic?.topicTitle)
-                                            },
-                                            onUploadPdf = { uri ->
-                                                viewModel.uploadDocumentFromUri(uri)
-                                            },
-                                            onAskAiAboutDoc = { doc ->
-                                                navigateToTab(NavTab.CHAT)
-                                                viewModel.askAiAboutDocument(doc)
-                                            },
-                                            onDeleteDoc = { doc ->
-                                                viewModel.deleteUploadedDocument(doc)
-                                            }
-                                        )
-                                    }
-                                    composable(NavTab.TOOLS.route) {
-                                        ToolsScreen(
-                                            subnetResult = subnetResult,
-                                            onCalculateSubnet = { ip, cidr ->
-                                                viewModel.calculateSubnet(ip, cidr)
-                                            },
-                                            wiresharkSamples = wiresharkSamples,
-                                            selectedPacket = selectedPacket,
-                                            onSelectWiresharkPacket = { viewModel.selectWiresharkPacket(it) },
-                                            commandCheatsheet = commandCheatsheet,
-                                            onAskAiAboutTool = { query ->
-                                                navigateToTab(NavTab.CHAT)
-                                                viewModel.sendMessage(query, "Tool Analysis")
-                                            }
-                                        )
-                                    }
-                                    composable(NavTab.EXAM_PREP.route) {
-                                        ExamPrepScreen(
-                                            topics = topics,
-                                            onRecordQuizResult = { topicTitle, score, total ->
-                                                viewModel.recordQuizResult(topicTitle, score, total)
-                                            },
-                                            onAskAiAboutExam = { query ->
-                                                navigateToTab(NavTab.CHAT)
-                                                viewModel.sendMessage(query, "Exam Prep")
-                                            }
-                                        )
-                                    }
-                                    composable(NavTab.SAVED_NOTES.route) {
-                                        SavedNotesScreen(
-                                            bookmarkedMessages = bookmarkedMessages,
-                                            savedNotes = savedNotes,
-                                            quizResults = quizResults,
-                                            onToggleBookmark = { id, bookmarked ->
-                                                viewModel.toggleBookmark(id, bookmarked)
-                                            },
-                                            onSaveStudyNote = { title, unit, content ->
-                                                viewModel.saveStudyNote(title, unit, content)
-                                            },
-                                            onDeleteStudyNote = { note ->
-                                                viewModel.deleteStudyNote(note)
-                                            }
-                                        )
-                                    }
+                                composable(NavTab.SYLLABUS.route) {
+                                    SyllabusScreen(
+                                        topics = topics,
+                                        selectedTopic = selectedTopic,
+                                        uploadedDocuments = uploadedDocuments,
+                                        onTopicSelected = { viewModel.selectTopic(it) },
+                                        onAskAiAboutTopic = { query ->
+                                            navigateToTab(NavTab.CHAT)
+                                            viewModel.sendMessage(query, selectedTopic?.topicTitle)
+                                        },
+                                        onUploadPdf = { uri ->
+                                            viewModel.uploadDocumentFromUri(uri)
+                                        },
+                                        onAskAiAboutDoc = { doc ->
+                                            navigateToTab(NavTab.CHAT)
+                                            viewModel.askAiAboutDocument(doc)
+                                        },
+                                        onDeleteDoc = { doc ->
+                                            viewModel.deleteUploadedDocument(doc)
+                                        }
+                                    )
+                                }
+                                composable(NavTab.TOOLS.route) {
+                                    ToolsScreen(
+                                        subnetResult = subnetResult,
+                                        onCalculateSubnet = { ip, cidr ->
+                                            viewModel.calculateSubnet(ip, cidr)
+                                        },
+                                        wiresharkSamples = wiresharkSamples,
+                                        selectedPacket = selectedPacket,
+                                        onSelectWiresharkPacket = { viewModel.selectWiresharkPacket(it) },
+                                        commandCheatsheet = commandCheatsheet,
+                                        onAskAiAboutTool = { query ->
+                                            navigateToTab(NavTab.CHAT)
+                                            viewModel.sendMessage(query, "Tool Analysis")
+                                        },
+                                        isVideoAnalyzing = isVideoAnalyzing,
+                                        videoAnalysisResult = videoAnalysisResult,
+                                        selectedVideoTitle = selectedVideoTitle,
+                                        onAnalyzeVideo = { uri, sampleTitle, customPrompt ->
+                                            viewModel.analyzeVideo(uri, sampleTitle, customPrompt)
+                                        }
+                                    )
+                                }
+                                composable(NavTab.EXAM_PREP.route) {
+                                    ExamPrepScreen(
+                                        topics = topics,
+                                        onRecordQuizResult = { topicTitle, score, total ->
+                                            viewModel.recordQuizResult(topicTitle, score, total)
+                                        },
+                                        onAskAiAboutExam = { query ->
+                                            navigateToTab(NavTab.CHAT)
+                                            viewModel.sendMessage(query, "Exam Prep")
+                                        }
+                                    )
+                                }
+                                composable(NavTab.SAVED_NOTES.route) {
+                                    SavedNotesScreen(
+                                        bookmarkedMessages = bookmarkedMessages,
+                                        savedNotes = savedNotes,
+                                        quizResults = quizResults,
+                                        onToggleBookmark = { id, bookmarked ->
+                                            viewModel.toggleBookmark(id, bookmarked)
+                                        },
+                                        onSaveStudyNote = { title, unit, content ->
+                                            viewModel.saveStudyNote(title, unit, content)
+                                        },
+                                        onDeleteStudyNote = { note ->
+                                            viewModel.deleteStudyNote(note)
+                                        }
+                                    )
                                 }
                             }
                         }
                     }
                 }
             }
+        }
         }
     }
 }

@@ -95,19 +95,19 @@ fun SplashScreen(
     )
 
     LaunchedEffect(Unit) {
-        delay(600)
+        delay(250)
         loadingStatusText = "Loading Computer Networks Syllabus & Protocols..."
         progress = 0.40f
 
-        delay(700)
+        delay(300)
         loadingStatusText = "Setting up AI Assistant & Wireshark Analyzer..."
         progress = 0.75f
 
-        delay(700)
+        delay(300)
         loadingStatusText = "Ready! Opening NetChat..."
         progress = 1.0f
 
-        delay(400)
+        delay(150)
         onSplashFinished()
     }
 

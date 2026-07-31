@@ -77,6 +77,16 @@ class NetChatViewModel(application: Application) : AndroidViewModel(application)
     private val _liveVoiceTranscript = MutableStateFlow("")
     val liveVoiceTranscript: StateFlow<String> = _liveVoiceTranscript.asStateFlow()
 
+    // Video Analysis Gemini 3.1 Pro State
+    private val _isVideoAnalyzing = MutableStateFlow(false)
+    val isVideoAnalyzing: StateFlow<Boolean> = _isVideoAnalyzing.asStateFlow()
+
+    private val _videoAnalysisResult = MutableStateFlow<String?>(null)
+    val videoAnalysisResult: StateFlow<String?> = _videoAnalysisResult.asStateFlow()
+
+    private val _selectedVideoTitle = MutableStateFlow("TCP 3-Way Handshake Animation")
+    val selectedVideoTitle: StateFlow<String> = _selectedVideoTitle.asStateFlow()
+
     init {
         loadInitialData()
     }
@@ -443,6 +453,46 @@ class NetChatViewModel(application: Application) : AndroidViewModel(application)
             // Also add to chat log
             repository.saveChatMessage(sender = "user", text = if (isAudio) "🎤 Voice Message" else input, topicTag = "Live Voice")
             repository.saveChatMessage(sender = "ai", text = response, topicTag = "Live Voice")
+        }
+    }
+
+    fun analyzeVideo(videoUri: Uri? = null, sampleTitle: String? = null, customPrompt: String = "") {
+        viewModelScope.launch {
+            _isVideoAnalyzing.value = true
+            _videoAnalysisResult.value = null
+
+            val title = sampleTitle ?: "Uploaded Network Video"
+            _selectedVideoTitle.value = title
+
+            var base64Data = ""
+            var mimeType = "video/mp4"
+
+            if (videoUri != null) {
+                val context = getApplication<Application>().applicationContext
+                try {
+                    mimeType = context.contentResolver.getType(videoUri) ?: "video/mp4"
+                    context.contentResolver.openInputStream(videoUri)?.use { stream ->
+                        val bytes = stream.readBytes()
+                        if (bytes.size <= 15 * 1024 * 1024) {
+                            base64Data = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                        } else {
+                            // Sample first 15MB if file is large
+                            val truncated = bytes.copyOf(15 * 1024 * 1024)
+                            base64Data = android.util.Base64.encodeToString(truncated, android.util.Base64.NO_WRAP)
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+
+            val result = repository.analyzeVideo(
+                videoBase64 = base64Data,
+                mimeType = mimeType,
+                videoTitle = title,
+                prompt = customPrompt
+            )
+
+            _videoAnalysisResult.value = result
+            _isVideoAnalyzing.value = false
         }
     }
 }

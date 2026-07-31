@@ -207,5 +207,84 @@ Rules:
             throw Exception("No response candidate")
         }
     }
+
+    suspend fun analyzeVideoContent(
+        videoBase64: String,
+        mimeType: String = "video/mp4",
+        userPrompt: String = "Analyze this video for key information."
+    ): String = withContext(Dispatchers.IO) {
+        val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (_: Throwable) { "" }
+        if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
+            throw IllegalArgumentException("API key not configured")
+        }
+
+        val modelName = "gemini-3.1-pro-preview"
+        val requestUrl = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKey"
+
+        val promptText = if (userPrompt.isNotBlank()) userPrompt else "Analyze this video content for key information, main summary, core topics, timestamps, and exam tips."
+
+        val jsonBody = JSONObject().apply {
+            put("systemInstruction", JSONObject().apply {
+                put("parts", JSONArray().put(JSONObject().put("text", """
+                    You are NetChat Gemini Pro Video Understanding Assistant.
+                    Analyze video content for Computer Networks education and extract key information.
+                    Structure your output cleanly with bullet points, timestamps if available, and clear section headers:
+                    1. 🎬 **Video Summary & Overview**
+                    2. 📌 **Key Concepts & Timestamps**
+                    3. ⚙️ **Technical Protocols & Details Covered**
+                    4. 💡 **Exam & Viva Q&A Takeaways**
+                """.trimIndent())))
+            })
+            put("contents", JSONArray().put(JSONObject().apply {
+                put("parts", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("inlineData", JSONObject().apply {
+                            put("mimeType", mimeType)
+                            put("data", videoBase64)
+                        })
+                    })
+                    put(JSONObject().apply {
+                        put("text", promptText)
+                    })
+                })
+            }))
+        }
+
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val request = Request.Builder()
+            .url(requestUrl)
+            .post(jsonBody.toString().toRequestBody(mediaType))
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string()
+                throw Exception("Video Analysis Error ${response.code}: ${errorBody ?: "Unknown error"}")
+            }
+            val responseBody = response.body?.string() ?: throw Exception("Empty response body")
+            val jsonResponse = JSONObject(responseBody)
+            val candidates = jsonResponse.optJSONArray("candidates")
+            if (candidates != null && candidates.length() > 0) {
+                val candidate = candidates.getJSONObject(0)
+                val content = candidate.optJSONObject("content")
+                val parts = content?.optJSONArray("parts")
+                if (parts != null && parts.length() > 0) {
+                    var responseText = ""
+                    for (i in 0 until parts.length()) {
+                        val partObj = parts.getJSONObject(i)
+                        val text = partObj.optString("text")
+                        if (text.isNotBlank()) {
+                            responseText = text
+                            break
+                        }
+                    }
+                    if (responseText.isNotBlank()) {
+                        return@withContext responseText
+                    }
+                }
+            }
+            throw Exception("No video analysis response generated")
+        }
+    }
 }
 
