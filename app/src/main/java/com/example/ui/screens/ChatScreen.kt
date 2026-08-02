@@ -301,6 +301,26 @@ fun ChatScreen(
                             fontSize = 13.sp
                         )
                     },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your Computer Networks question...")
+                                }
+                                try {
+                                    speechRecognizerLauncher.launch(intent)
+                                } catch (_: Exception) {}
+                            },
+                            modifier = Modifier.testTag("mic_speech_to_text_input_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Speech to text hands free voice input",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
                     modifier = Modifier
                         .weight(1f)
                         .testTag("chat_input"),
