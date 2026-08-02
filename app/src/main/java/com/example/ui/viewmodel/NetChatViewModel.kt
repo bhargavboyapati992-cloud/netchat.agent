@@ -87,6 +87,19 @@ class NetChatViewModel(application: Application) : AndroidViewModel(application)
     private val _selectedVideoTitle = MutableStateFlow("TCP 3-Way Handshake Animation")
     val selectedVideoTitle: StateFlow<String> = _selectedVideoTitle.asStateFlow()
 
+    // Gemini 3 Pro High Quality Image Generation State
+    private val _isGeneratingImage = MutableStateFlow(false)
+    val isGeneratingImage: StateFlow<Boolean> = _isGeneratingImage.asStateFlow()
+
+    private val _generatedImageBase64 = MutableStateFlow<String?>(null)
+    val generatedImageBase64: StateFlow<String?> = _generatedImageBase64.asStateFlow()
+
+    private val _selectedImageSize = MutableStateFlow("1K") // 1K, 2K, 4K
+    val selectedImageSize: StateFlow<String> = _selectedImageSize.asStateFlow()
+
+    private val _imageGenError = MutableStateFlow<String?>(null)
+    val imageGenError: StateFlow<String?> = _imageGenError.asStateFlow()
+
     init {
         loadInitialData()
     }
@@ -493,6 +506,29 @@ class NetChatViewModel(application: Application) : AndroidViewModel(application)
 
             _videoAnalysisResult.value = result
             _isVideoAnalyzing.value = false
+        }
+    }
+
+    fun setSelectedImageSize(size: String) {
+        _selectedImageSize.value = size
+    }
+
+    fun generateDiagramImage(prompt: String) {
+        if (prompt.isBlank()) return
+        viewModelScope.launch {
+            _isGeneratingImage.value = true
+            _imageGenError.value = null
+            _generatedImageBase64.value = null
+            try {
+                val size = _selectedImageSize.value
+                val fullPrompt = "Detailed high quality educational computer network diagram or topology visualization of: $prompt. Professional clean technical chart, clear labels."
+                val base64 = repository.generateHighQualityImage(fullPrompt, size)
+                _generatedImageBase64.value = base64
+            } catch (e: Exception) {
+                _imageGenError.value = e.message ?: "Failed to generate image"
+            } finally {
+                _isGeneratingImage.value = false
+            }
         }
     }
 }

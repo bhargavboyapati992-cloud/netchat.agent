@@ -66,6 +66,12 @@ import com.example.data.model.WiresharkPacketSample
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.net.Uri
+import android.graphics.BitmapFactory
+import android.util.Base64
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.UploadFile
@@ -84,9 +90,15 @@ fun ToolsScreen(
     videoAnalysisResult: String? = null,
     selectedVideoTitle: String = "",
     onAnalyzeVideo: (Uri?, String?, String) -> Unit = { _, _, _ -> },
+    isGeneratingImage: Boolean = false,
+    generatedImageBase64: String? = null,
+    selectedImageSize: String = "1K",
+    imageGenError: String? = null,
+    onSetImageSize: (String) -> Unit = {},
+    onGenerateDiagramImage: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    var toolSubTab by remember { mutableIntStateOf(0) } // 0 = Subnet, 1 = Wireshark, 2 = CLI Cheatsheet, 3 = Video AI
+    var toolSubTab by remember { mutableIntStateOf(0) } // 0 = Subnet, 1 = Wireshark, 2 = CLI Cheatsheet, 3 = Video AI, 4 = Image Gen
 
     Column(
         modifier = modifier
@@ -102,30 +114,37 @@ fun ToolsScreen(
             Tab(
                 selected = (toolSubTab == 0),
                 onClick = { toolSubTab = 0 },
-                text = { Text("Subnet", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                icon = { Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                text = { Text("Subnet", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Calculate, contentDescription = null, modifier = Modifier.size(14.dp)) },
                 modifier = Modifier.testTag("tool_tab_subnet")
             )
             Tab(
                 selected = (toolSubTab == 1),
                 onClick = { toolSubTab = 1 },
-                text = { Text("Wireshark", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                icon = { Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                text = { Text("Wireshark", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(14.dp)) },
                 modifier = Modifier.testTag("tool_tab_wireshark")
             )
             Tab(
                 selected = (toolSubTab == 2),
                 onClick = { toolSubTab = 2 },
-                text = { Text("CLI Commands", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                icon = { Icon(Icons.Default.Code, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                text = { Text("CLI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Code, contentDescription = null, modifier = Modifier.size(14.dp)) },
                 modifier = Modifier.testTag("tool_tab_cli")
             )
             Tab(
                 selected = (toolSubTab == 3),
                 onClick = { toolSubTab = 3 },
-                text = { Text("Video AI", fontSize = 11.sp, fontWeight = FontWeight.Bold) },
-                icon = { Icon(Icons.Default.VideoLibrary, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                text = { Text("Video AI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.VideoLibrary, contentDescription = null, modifier = Modifier.size(14.dp)) },
                 modifier = Modifier.testTag("tool_tab_video_ai")
+            )
+            Tab(
+                selected = (toolSubTab == 4),
+                onClick = { toolSubTab = 4 },
+                text = { Text("Diagram AI", fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                icon = { Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(14.dp)) },
+                modifier = Modifier.testTag("tool_tab_image_gen")
             )
         }
 
@@ -138,6 +157,15 @@ fun ToolsScreen(
                 videoAnalysisResult = videoAnalysisResult,
                 selectedVideoTitle = selectedVideoTitle,
                 onAnalyzeVideo = onAnalyzeVideo,
+                onAskAiAboutTool = onAskAiAboutTool
+            )
+            4 -> ImageGenerationTool(
+                isGeneratingImage = isGeneratingImage,
+                generatedImageBase64 = generatedImageBase64,
+                selectedImageSize = selectedImageSize,
+                imageGenError = imageGenError,
+                onSetImageSize = onSetImageSize,
+                onGenerateDiagramImage = onGenerateDiagramImage,
                 onAskAiAboutTool = onAskAiAboutTool
             )
         }
@@ -768,6 +796,264 @@ private fun VideoAnalysisTool(
                                 text = videoAnalysisResult,
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.padding(12.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImageGenerationTool(
+    isGeneratingImage: Boolean,
+    generatedImageBase64: String?,
+    selectedImageSize: String,
+    imageGenError: String?,
+    onSetImageSize: (String) -> Unit,
+    onGenerateDiagramImage: (String) -> Unit,
+    onAskAiAboutTool: (String) -> Unit
+) {
+    var promptInput by remember { mutableStateOf("OSI 7-Layer Architecture Diagram") }
+    val samplePrompts = listOf(
+        "OSI 7-Layer Architecture Diagram",
+        "TCP 3-Way Handshake Flowchart",
+        "IPv4 vs IPv6 Header Comparison Chart",
+        "Subnetting VLSM Tree Network Topology",
+        "CSMA/CD Collision Detection Flowchart"
+    )
+
+    val imageSizes = listOf("1K", "2K", "4K")
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            ElevatedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "🎨 High Quality AI Diagram Generator",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
+                        ) {
+                            Text(
+                                text = "gemini-3-pro-image-preview",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Generate clear, high-resolution networking diagrams, protocol flowcharts, and architecture charts directly from prompt instructions using Gemini 3 Pro.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        text = "Quick Sample Prompts:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        samplePrompts.forEach { sample ->
+                            FilterChip(
+                                selected = (promptInput == sample),
+                                onClick = { promptInput = sample },
+                                label = { Text(sample, fontSize = 11.sp) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = promptInput,
+                        onValueChange = { promptInput = it },
+                        label = { Text("Diagram Prompt") },
+                        placeholder = { Text("Describe the diagram or flowchart you need...") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("image_prompt_input"),
+                        singleLine = false,
+                        maxLines = 3
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Image Size / Resolution Selector (1K, 2K, 4K)
+                    Text(
+                        text = "Select Resolution / Image Size:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        imageSizes.forEach { size ->
+                            FilterChip(
+                                selected = (selectedImageSize == size),
+                                onClick = { onSetImageSize(size) },
+                                label = {
+                                    Text(
+                                        text = when (size) {
+                                            "1K" -> "1K (Standard)"
+                                            "2K" -> "2K (HD)"
+                                            "4K" -> "4K (Ultra HD)"
+                                            else -> size
+                                        },
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                },
+                                modifier = Modifier.testTag("size_chip_$size"),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.tertiary
+                                )
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = { onGenerateDiagramImage(promptInput) },
+                        enabled = !isGeneratingImage && promptInput.isNotBlank(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("generate_diagram_btn"),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        if (isGeneratingImage) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Generating Diagram with Gemini 3 Pro ($selectedImageSize)...", fontSize = 13.sp)
+                        } else {
+                            Icon(Icons.Default.Palette, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Generate $selectedImageSize Diagram Image", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+        }
+
+        if (imageGenError != null) {
+            item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "⚠️ Generation Error: $imageGenError",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
+        }
+
+        if (generatedImageBase64 != null) {
+            item {
+                val imageBitmap = remember(generatedImageBase64) {
+                    try {
+                        val decodedBytes = Base64.decode(generatedImageBase64, Base64.DEFAULT)
+                        BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)?.asImageBitmap()
+                    } catch (_: Exception) {
+                        null
+                    }
+                }
+
+                ElevatedCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "✨ Generated Diagram ($selectedImageSize)",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            Button(
+                                onClick = {
+                                    onAskAiAboutTool("Explain the key components shown in the diagram for '$promptInput' step by step.")
+                                },
+                                shape = RoundedCornerShape(20.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                            ) {
+                                Icon(Icons.Default.Psychology, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Ask Tutor", fontSize = 11.sp)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (imageBitmap != null) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(320.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Image(
+                                    bitmap = imageBitmap,
+                                    contentDescription = "Generated Diagram Image",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "Image data generated successfully.",
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }

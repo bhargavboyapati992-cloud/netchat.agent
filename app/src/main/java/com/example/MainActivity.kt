@@ -108,6 +108,11 @@ class MainActivity : ComponentActivity() {
                 val videoAnalysisResult by viewModel.videoAnalysisResult.collectAsStateWithLifecycle()
                 val selectedVideoTitle by viewModel.selectedVideoTitle.collectAsStateWithLifecycle()
 
+                val isGeneratingImage by viewModel.isGeneratingImage.collectAsStateWithLifecycle()
+                val generatedImageBase64 by viewModel.generatedImageBase64.collectAsStateWithLifecycle()
+                val selectedImageSize by viewModel.selectedImageSize.collectAsStateWithLifecycle()
+                val imageGenError by viewModel.imageGenError.collectAsStateWithLifecycle()
+
                 ModalNavigationDrawer(
                     drawerState = drawerState,
                     drawerContent = {
@@ -231,7 +236,13 @@ class MainActivity : ComponentActivity() {
                                         selectedVideoTitle = selectedVideoTitle,
                                         onAnalyzeVideo = { uri, sampleTitle, customPrompt ->
                                             viewModel.analyzeVideo(uri, sampleTitle, customPrompt)
-                                        }
+                                        },
+                                        isGeneratingImage = isGeneratingImage,
+                                        generatedImageBase64 = generatedImageBase64,
+                                        selectedImageSize = selectedImageSize,
+                                        imageGenError = imageGenError,
+                                        onSetImageSize = { size -> viewModel.setSelectedImageSize(size) },
+                                        onGenerateDiagramImage = { prompt -> viewModel.generateDiagramImage(prompt) }
                                     )
                                 }
                                 composable(NavTab.EXAM_PREP.route) {

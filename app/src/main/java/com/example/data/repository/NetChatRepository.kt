@@ -198,6 +198,14 @@ class NetChatRepository(private val dao: NetChatDao) {
         }
     }
 
+    suspend fun generateHighQualityImage(prompt: String, imageSize: String = "1K"): String {
+        return try {
+            GeminiApiClient.generateHighQualityImage(prompt, imageSize)
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
     suspend fun deleteStudyNote(note: StudyNoteEntity) {
         dao.deleteStudyNote(note)
     }

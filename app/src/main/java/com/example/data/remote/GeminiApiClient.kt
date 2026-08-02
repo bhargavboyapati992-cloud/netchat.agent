@@ -298,5 +298,65 @@ RULES:
             throw Exception("No video analysis response generated")
         }
     }
+
+    suspend fun generateHighQualityImage(
+        prompt: String,
+        imageSize: String = "1K" // "1K", "2K", "4K"
+    ): String = withContext(Dispatchers.IO) {
+        val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (_: Throwable) { "" }
+        if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
+            throw IllegalArgumentException("API key not configured")
+        }
+
+        val modelName = "gemini-3-pro-image-preview"
+        val requestUrl = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKey"
+
+        val jsonBody = JSONObject().apply {
+            put("contents", JSONArray().put(JSONObject().apply {
+                put("parts", JSONArray().put(JSONObject().put("text", prompt)))
+            }))
+            put("generationConfig", JSONObject().apply {
+                put("imageConfig", JSONObject().apply {
+                    put("aspectRatio", "1:1")
+                    put("imageSize", imageSize)
+                })
+                put("responseModalities", JSONArray().put("TEXT").put("IMAGE"))
+            })
+        }
+
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+        val request = Request.Builder()
+            .url(requestUrl)
+            .post(jsonBody.toString().toRequestBody(mediaType))
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string()
+                throw Exception("Image Generation Error ${response.code}: ${errorBody ?: "Unknown error"}")
+            }
+            val responseBody = response.body?.string() ?: throw Exception("Empty response body")
+            val jsonResponse = JSONObject(responseBody)
+            val candidates = jsonResponse.optJSONArray("candidates")
+            if (candidates != null && candidates.length() > 0) {
+                val candidate = candidates.getJSONObject(0)
+                val content = candidate.optJSONObject("content")
+                val parts = content?.optJSONArray("parts")
+                if (parts != null && parts.length() > 0) {
+                    for (i in 0 until parts.length()) {
+                        val partObj = parts.getJSONObject(i)
+                        val inlineData = partObj.optJSONObject("inlineData")
+                        if (inlineData != null) {
+                            val base64Data = inlineData.optString("data")
+                            if (base64Data.isNotBlank()) {
+                                return@withContext base64Data
+                            }
+                        }
+                    }
+                }
+            }
+            throw Exception("No image returned from gemini-3-pro-image-preview")
+        }
+    }
 }
 
