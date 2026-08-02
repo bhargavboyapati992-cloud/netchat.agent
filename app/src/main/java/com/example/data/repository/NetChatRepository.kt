@@ -232,7 +232,7 @@ class NetChatRepository(private val dao: NetChatDao) {
         val qLower = prompt.lowercase().trim()
 
         if (qLower.contains("hello") || qLower.contains("hi") || qLower.contains("welcome") || qLower.contains("hey")) {
-            return "Hello! I'm NetChat for Computer Networks."
+            return "Welcome, I'm NetChat for Computer Networks! How can I help you today?"
         }
 
         // Search in Room database documents for keyword matches
@@ -246,7 +246,7 @@ class NetChatRepository(private val dao: NetChatDao) {
             }
             if (matchedLines.isNotEmpty()) {
                 matchingDocText.append("\n📄 **From Knowledge Database (${doc.title})**:\n")
-                matchingDocText.append(matchedLines.take(15).joinToString("\n"))
+                matchingDocText.append(matchedLines.take(8).joinToString("\n"))
                 matchingDocText.append("\n")
             }
         }
@@ -254,172 +254,144 @@ class NetChatRepository(private val dao: NetChatDao) {
         // Detailed knowledge lookup for specific topics
         val specificAnswer = when {
             qLower.contains("osi") || (qLower.contains("layer") && !qLower.contains("transport") && !qLower.contains("network layer")) -> """
-📌 **Simple Concept**:
-The OSI (Open Systems Interconnection) model is a 7-layer theoretical blueprint showing how data travels from an application across physical media to another device.
-
-⚙️ **Technical Details**:
-1. **Application (Layer 7)**: HTTP, DNS, FTP, SMTP.
-2. **Presentation (Layer 6)**: Encryption (SSL/TLS), Compression, Formatting.
-3. **Session (Layer 5)**: Session establishment, RPC.
-4. **Transport (Layer 4)**: End-to-end reliability, Flow Control (TCP, UDP).
-5. **Network (Layer 3)**: Logical Addressing (IPv4/IPv6) & Packet Routing.
-6. **Data Link (Layer 2)**: MAC Addressing, Framing (Ethernet, CSMA/CD, CRC).
-7. **Physical (Layer 1)**: Bits, Cables, Signals.
+📌 **Concept (In Simple Terms)**:
+• The OSI model is a 7-step guide showing how data moves from your phone to another computer across the internet.
+• Layer 7 (Application): What you see (e.g. Chrome, WhatsApp).
+• Layer 4 (Transport): Ensures data arrives safely without missing pieces (TCP/UDP).
+• Layer 3 (Network): Finds the right path using IP addresses.
+• Layer 2 & 1 (Data Link & Physical): Sends raw bits over cables or Wi-Fi.
 
 💡 **Real-World Example**:
-Mailing a letter: Application is writing message; Transport is envelope; Network is destination address; Data Link is local delivery van; Physical is road asphalt!
+Sending a parcel: Writing a letter is Application; put in box is Transport; recipient address is Network; delivery truck is Data Link; road surface is Physical!
 
-📝 **Exam & Viva Tip**:
-Mnemonic (Bottom to Top): **P**lease **D**o **N**ot **T**hrow **S**ausage **P**izza **A**way.
+📝 **Exam Point of View Question**:
+• **Q**: What is the PDU (Packet Data Unit) at Layer 3 of the OSI model?
+• **A**: The PDU at Layer 3 (Network Layer) is called a **Packet**.
 """.trimIndent()
 
             qLower.contains("tcp") && (qLower.contains("udp") || qLower.contains("difference") || qLower.contains("compare")) -> """
-📌 **Simple Concept**:
-TCP is connection-oriented and guarantees error-free ordered delivery. UDP is connectionless, fast, and sends without waiting for acknowledgments.
-
-⚙️ **Technical Details**:
-• **TCP**: 3-Way Handshake (SYN, SYN-ACK, ACK), Flow Control (Sliding Window), Congestion Control (Slow Start), 20-60 byte header.
-• **UDP**: Connectionless, 8-byte header (Src Port, Dest Port, Length, Checksum), low overhead.
-• **Applications**: TCP = HTTP/S, SSH, FTP, SMTP; UDP = DNS, DHCP, VoIP, Live Streaming.
+📌 **Concept (In Simple Terms)**:
+• **TCP** is safe, reliable, and checks that every single byte arrives correctly before proceeding.
+• **UDP** is super fast, simple, and sends data without checking if the receiver got it.
+• TCP uses a 3-way handshake; UDP has zero handshake.
+• TCP is used for Web (HTTP), Email (SMTP), and File transfer (FTP).
+• UDP is used for Live Video Streaming, Online Gaming, and DNS queries.
 
 💡 **Real-World Example**:
-Downloading an installer file uses TCP (needs every byte 100% accurate). Live video calls use UDP (dropped frame is skipped to prevent lag).
+TCP is like a registered mail parcel that requires your signature. UDP is like shouting across a room—fast, but if noise blocks it, it's missed.
 
-📝 **Exam & Viva Tip**:
-TCP Header mandatory fields: Src/Dest Port (16 bits), Sequence No (32 bits), Ack No (32 bits), Flags, Window Size.
+📝 **Exam Point of View Question**:
+• **Q**: Why is UDP preferred over TCP for live video conferencing?
+• **A**: Because UDP has lower delay and zero connection overhead, avoiding freeze or lag caused by TCP retransmissions.
 """.trimIndent()
 
             qLower.contains("handshake") || qLower.contains("3 way") || qLower.contains("syn") -> """
-📌 **Simple Concept**:
-The TCP 3-Way Handshake establishes sequence numbers and synchronizes connection state between client and server before sending data.
-
-⚙️ **Technical Details**:
-1. **SYN**: Client sends segment with `SYN=1`, `Seq=X`.
-2. **SYN-ACK**: Server replies with `SYN=1`, `ACK=1`, `Seq=Y`, `Ack=X+1`.
-3. **ACK**: Client replies with `ACK=1`, `Seq=X+1`, `Ack=Y+1`.
+📌 **Concept (In Simple Terms)**:
+• The TCP 3-Way Handshake is a 3-step greeting process before devices exchange real data.
+• Step 1 (SYN): Client asks "Can we start connecting?" (Seq = X).
+• Step 2 (SYN-ACK): Server replies "Yes! I agree to connect" (Seq = Y, Ack = X+1).
+• Step 3 (ACK): Client confirms "Awesome, let's talk now!" (Ack = Y+1).
+• It ensures both sides are ready and agree on sequence numbers.
 
 💡 **Real-World Example**:
-Walkie-talkie conversation: "Can you hear me? (SYN)" -> "Yes, I hear you! Can you hear me? (SYN-ACK)" -> "Yes! Let's talk! (ACK)".
+Walkie-Talkie conversation: "Can you hear me? (SYN)" -> "Yes, I hear you, can you hear me? (SYN-ACK)" -> "Yes, loud and clear! (ACK)".
 
-📝 **Exam & Viva Tip**:
-Connection termination uses a 4-Way Handshake with `FIN` and `ACK` flags.
+📝 **Exam Point of View Question**:
+• **Q**: What TCP flags are set during the 3-Way Handshake?
+• **A**: Step 1 uses **SYN**, Step 2 uses **SYN + ACK**, Step 3 uses **ACK**.
 """.trimIndent()
 
             qLower.contains("crc") || qLower.contains("cyclic redundancy") || qLower.contains("error detection") -> """
-📌 **Simple Concept**:
-CRC (Cyclic Redundancy Check) is a powerful error-detection method based on binary polynomial division used at the Data Link layer.
-
-⚙️ **Technical Details**:
-• Generator Polynomial G(x) appends 'r' redundant zero bits to dataword M(x).
-• Binary division modulo-2 yields Remainder R(x).
-• Transmitted Frame = M(x) appended with R(x).
-• Receiver divides by same G(x); if remainder is 0, frame is error-free!
+📌 **Concept (In Simple Terms)**:
+• CRC is a mathematical trick used by the Data Link layer to check if data got corrupted during transmission.
+• Sender divides binary data by a secret divisor number and appends the remainder (CRC code).
+• Receiver divides the received packet by the exact same divisor.
+• If remainder is 0 = Data is 100% clean!
+• If remainder is NOT 0 = Data had an error and is dropped.
 
 💡 **Real-World Example**:
-Barcodes or ISBN check digits that detect single or double mistyped numbers instantly.
+Like checking the total price on a receipt to make sure no item was miscalculated or missed.
 
-📝 **Exam & Viva Tip**:
-CRC can detect all single-bit, double-bit, odd number errors, and burst errors of length <= r.
+📝 **Exam Point of View Question**:
+• **Q**: At which OSI layer does CRC error detection take place?
+• **A**: CRC error detection takes place at **Layer 2 (Data Link Layer)** in Ethernet frames.
 """.trimIndent()
 
             qLower.contains("aloha") || qLower.contains("csma") || qLower.contains("mac protocol") -> """
-📌 **Simple Concept**:
-Multiple access protocols govern how nodes share a common transmission medium without destroying each other's signals.
-
-⚙️ **Technical Details**:
-• **Pure ALOHA**: Transmit anytime. Throughput S = G * e^(-2G), Max Efficiency = 18.4%.
-• **Slotted ALOHA**: Transmit only at slot boundaries. Throughput S = G * e^(-G), Max Efficiency = 36.8%.
-• **CSMA/CD**: Carrier Sense Multiple Access with Collision Detection. Stations listen before talking and abort immediately upon collision.
-• **CSMA/CA**: Used in Wi-Fi (802.11) with IFS (Interframe Space), Contention Window, and RTS/CTS handshaking.
+📌 **Concept (In Simple Terms)**:
+• Multiple access protocols stop devices on the same network from talking at once and destroying data.
+• Pure ALOHA: Send data whenever you want (18% efficiency).
+• Slotted ALOHA: Send data only at fixed clock times (37% efficiency).
+• CSMA/CD: Listen before talking; if collision happens, stop immediately (used in wired Ethernet).
+• CSMA/CA: Listen, ask permission (RTS/CTS), then talk (used in Wi-Fi).
 
 💡 **Real-World Example**:
-Pure ALOHA is talking whenever you feel like it in a crowded room. CSMA/CD is raising your hand and stopping if someone else speaks at the exact same moment.
+CSMA/CD is like raising your hand in class and stopping if someone else starts speaking at the exact same moment.
 
-📝 **Exam & Viva Tip**:
-Min Ethernet Frame length L_min >= 2 * R * (d / v) to detect collisions reliably!
+📝 **Exam Point of View Question**:
+• **Q**: What does CSMA/CD stand for and where is it used?
+• **A**: Carrier Sense Multiple Access with Collision Detection, used in wired Ethernet (IEEE 802.3).
 """.trimIndent()
 
             qLower.contains("subnet") || qLower.contains("cidr") || qLower.contains("mask") -> """
-📌 **Simple Concept**:
-Subnetting divides a large network into smaller sub-networks to reduce broadcast traffic and optimize IP allocation.
-
-⚙️ **Technical Details**:
-• CIDR Notation `/n`: 'n' leftmost bits are Network bits.
-• Usable Hosts = 2^(32 - n) - 2.
-• Example `/26`: Mask = `255.255.255.192`, Usable Hosts = 64 - 2 = 62.
+📌 **Concept (In Simple Terms)**:
+• Subnetting breaks one big network into smaller, manageable sub-networks.
+• Reduces broadcast noise and keeps networks organized and secure.
+• Subnet Mask tells which part is Network ID and which part is Host ID.
+• Usable hosts formula: **2^(32 - prefix) - 2**.
+• E.g. `/24` gives 254 usable host IP addresses.
 
 💡 **Real-World Example**:
-Dividing a single large office floor into 4 private conference rooms so noise doesn't interfere.
+Dividing a large open office floor into 4 private meeting rooms so conversations don't distract everyone.
 
-📝 **Exam & Viva Tip**:
-Use NetChat's built-in **Subnet Calculator** tab to verify CIDR, wildcard masks, and host ranges.
+📝 **Exam Point of View Question**:
+• **Q**: How many usable host IP addresses are available in a `/26` subnet?
+• **A**: **62 usable hosts** (Formula: 2^(32 - 26) - 2 = 64 - 2 = 62).
 """.trimIndent()
 
             qLower.contains("dns") || qLower.contains("domain name") -> """
-📌 **Simple Concept**:
-DNS translates domain names (`google.com`) to IP addresses (`142.250.190.46`). Runs on UDP/TCP port 53.
-
-⚙️ **Technical Details**:
-• Resolution Hierarchy: Browser/OS Cache -> Local Resolver -> Root (`.`) -> TLD (`.com`) -> Authoritative DNS.
-• Records: `A` (IPv4), `AAAA` (IPv6), `CNAME` (Alias), `MX` (Mail), `NS` (Name Server).
+📌 **Concept (In Simple Terms)**:
+• DNS is the phonebook of the Internet.
+• Translates human-friendly web names like `google.com` into computer IP addresses like `142.250.190.46`.
+• Uses UDP port 53 for fast queries.
+• If your computer doesn't know the IP, it asks Root DNS -> TLD DNS -> Authoritative DNS.
 
 💡 **Real-World Example**:
-A smartphone contact list translating "Mom" to her phone number `+1-555-0199`.
+Your mobile phone contact list: You search for "Mom" and your phone dials her actual numbers `+1-555-0199`.
 
-📝 **Exam & Viva Tip**:
-Recursive DNS (resolver fetches on behalf) vs Iterative DNS (resolver gets next server address to query).
+📝 **Exam Point of View Question**:
+• **Q**: Which transport protocol and port number does DNS use for standard queries?
+• **A**: DNS uses **UDP** on **Port 53**.
 """.trimIndent()
 
             qLower.contains("routing") || qLower.contains("rip") || qLower.contains("ospf") || qLower.contains("bgp") -> """
-📌 **Simple Concept**:
-Routing protocols determine the optimal path for IP packets across interconnected networks.
-
-⚙️ **Technical Details**:
-• **RIP (Distance Vector)**: Uses Bellman-Ford algorithm, Hop Count metric (max 15), 30s updates.
-• **OSPF (Link State)**: Uses Dijkstra's algorithm, Bandwidth metric, Link State Packets (LSPs), Areas.
-• **BGP (Path Vector)**: Interdomain routing between Autonomous Systems (AS), policy-based rules.
+📌 **Concept (In Simple Terms)**:
+• Routing finds the best, fastest path for packets across routers on the Internet.
+• **RIP**: Counts number of router jumps (max 15 hops).
+• **OSPF**: Calculates path based on highest link speed/bandwidth (Dijkstra's algorithm).
+• **BGP**: Connects major internet providers (ISPs) world-wide.
 
 💡 **Real-World Example**:
-GPS Navigation: RIP counts number of turns; OSPF calculates fastest highway speed limit; BGP chooses toll road vs state borders.
+GPS Navigation: RIP counts number of road turns; OSPF finds the fastest highway route based on speed limits.
 
-📝 **Exam & Viva Tip**:
-Distance Vector suffers from the **Count-to-Infinity** problem, solved using Split Horizon & Poison Reverse.
-""".trimIndent()
-
-            qLower.contains("nptel") || qLower.contains("mooc") || qLower.contains("course") -> """
-📌 **NPTEL & MOOCs Computer Networks Online Courses**:
-1. **Computer Networks and Internet Protocol**: Prof. Soumya Kanti Ghosh & Prof. Sandip Chakraborty (IIT Kharagpur) — `https://onlinecourses.nptel.ac.in/noc25_cs15/preview`
-2. **Advanced Computer Networks**: Prof. Neminath Hubballi & Prof. Sameer G Kulkarni (IIT Indore / IIT Gandhinagar) — `https://onlinecourses.nptel.ac.in/noc26_cs60/preview`
-3. **Computer Network Performance Analysis**: Prof. Varsha Apte (IIT Bombay) — `https://onlinecourses.nptel.ac.in/noc25_cs126/preview`
-""".trimIndent()
-
-            qLower.contains("book") || qLower.contains("textbook") || qLower.contains("kurose") || qLower.contains("forouzan") || qLower.contains("tanenbaum") -> """
-📌 **Computer Networks Standard Textbooks & Download Links**:
-1. **Kurose & Ross**: *Computer Networking: A Top-Down Approach* (6th/7th Edition, Pearson)
-   - Online Link: `https://github.com/kowsertusher/Book/blob/master/Computer.Networking%20A%20Top-Down%20Approach%206th%20Edition.pdf`
-2. **Behrouz A. Forouzan**: *Data Communications and Networking* (4th/5th Edition, McGraw-Hill)
-3. **Andrew S. Tanenbaum**: *Computer Networks* (5th Edition, Pearson)
+📝 **Exam Point of View Question**:
+• **Q**: Which algorithm is used by the OSPF routing protocol?
+• **A**: OSPF uses **Dijkstra's Shortest Path First (SPF) algorithm**.
 """.trimIndent()
 
             else -> null
         }
 
-        return buildString {
-            if (specificAnswer != null) {
-                append(specificAnswer)
-            } else {
-                append("📌 **Computer Networks Knowledge Breakdown for \"$prompt\"**:\n\n")
-                append("Here is the core technical context retrieved for **$prompt**:\n")
-                append("• **Layered Architecture**: Computer networking operates on protocol layers (OSI 7-layer and TCP/IP 4-layer models) where each layer encapsulates header controls.\n")
-                append("• **Protocols**: Data Link (Ethernet, CSMA/CD, CRC), Network (IPv4/IPv6, ARP, ICMP, OSPF, BGP), Transport (TCP 3-way handshake, UDP), Application (DNS, HTTP, DHCP, SMTP).\n")
-            }
-
-            if (matchingDocText.isNotBlank()) {
-                append("\n\n📚 **Relevant Database Context Found**:")
-                append(matchingDocText)
-            } else {
-                append("\n\n📝 *Tip: You can upload your custom syllabus PDF or notes anytime in the Chat window or Syllabus tab!*")
-            }
+        return specificAnswer ?: buildString {
+            append("📌 **Concept (In Simple Terms)**:\n")
+            append("• **Computer Networks** link interconnected devices to reliably exchange data, packets, and services.\n")
+            append("• Information is divided into structured **Packets** with headers for routing and error checks.\n")
+            append("• **Core Protocol Stack**: IP (Addressing), TCP/UDP (Transport Control), HTTP/DNS (Application Services).\n\n")
+            append("💡 **Real-World Example**:\n")
+            append("Browsing a web page: Web browser creates HTTP request -> wrapped in TCP packet -> routed via IP address over Wi-Fi.\n\n")
+            append("📝 **Exam Point of View Question**:\n")
+            append("• **Q**: What are the 4 layers of the TCP/IP conceptual model?\n")
+            append("• **A**: Application Layer, Transport Layer, Internet (Network) Layer, and Network Access (Data Link/Physical) Layer.")
         }
     }
 
