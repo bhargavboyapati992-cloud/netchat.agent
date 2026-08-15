@@ -14,42 +14,38 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up JDK 17
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v5 # Automatically uses latest non-deprecated node action
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    # Secure Step: Replaces target placeholder text patterns with vault encrypted variables strictly
+    # Secure Step: Dynamically replaces placeholder text with your vault hidden key
     - name: Inject Secure Groq API Key
       run: |
         find . -name "GeminiApiClient.kt" -exec sed -i 's/"PLACEHOLDER_KEY"/${{ secrets.GROQ_API_KEY }}/g' {} +
 
-    # Protection Step: Enforces isolation by clearing all implicit modern cache configurations
-    - name: Configure Gradle Compiler Properties Bypass
+    # Dynamic Path Solver: Finds the exact location of gradlew and compiles right inside that folder!
+    - name: Locate Gradle Root and Build APK
       run: |
-        find . -maxdepth 3 -type d -exec sh -c 'echo "android.experimental.lifecycle.compose=true" >> {}/local.properties 2>/dev/null || true' \;
-        find . -maxdepth 3 -type d -exec sh -c 'echo "kotlin.experimental.tryK2=false" >> {}/local.properties 2>/dev/null || true' \;
-        find . -maxdepth 3 -type d -exec sh -c 'echo "org.gradle.configureondemand=false" >> {}/gradle.properties 2>/dev/null || true' \;
-        find . -maxdepth 3 -type d -exec sh -c 'echo "org.gradle.configuration-cache=false" >> {}/gradle.properties 2>/dev/null || true' \;
-
-    # Version Isolation Step: Deletes any global binary wrapper interception vectors if present
-    - name: Enforce Sealed Distribution Build
-      run: |
-        if [ -f gradlew ]; then
-          chmod +x gradlew
-          echo "Using local execution mapping..."
-        else
-          echo "Generating sealed gradle parameters..."
-          npm install -g gradle-to-js-wrapper 2>/dev/null || true
-          touch gradlew
-          chmod +x gradlew
+        GRADLE_ROOT=$(find . -name "gradlew" -printf '%h\n' -print -quit)
+        if [ -z "$GRADLE_ROOT" ]; then
+          echo "gradlew not found! Generating safe gradle execution tree wrapper..."
+          gradle wrapper --gradle-version 8.5
+          GRADLE_ROOT="."
         fi
-
-    # Pure Compilation Step: Uses explicit internal properties flags to instantly disable VersionCheckPlugin crashes
-    - name: Build Secure Unlimited Debug APK
-      run: |
+        
+        echo "Found gradle root at: $GRADLE_ROOT"
+        cd "$GRADLE_ROOT"
+        chmod +x gradlew
+        
+        # Inject structural compiler parameters directly into local properties
+        echo "android.experimental.lifecycle.compose=true" >> local.properties
+        echo "kotlin.experimental.tryK2=false" >> local.properties
+        
+        # Explicitly run the compilation task bypassing the modern cache bugs
         ./gradlew clean assembleDebug --no-daemon --no-configuration-cache -Pandroid.overrideVersionCheck=true -Pandroid.experimental.lifecycle.compose=true
 
+    # Flexible Artifact Collector: Searches recursively across all folders for the output APK file
     - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
