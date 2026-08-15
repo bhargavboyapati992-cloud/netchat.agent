@@ -23,7 +23,7 @@ object GeminiApiClient {
 
     private const val SYSTEM_PROMPT = """
 You are NetChat, an expert AI Master Professor with 15 years of teaching experience in Computer Networks.
-Your signature teaching style combines 5th-grade simplicity (so any beginner understands instantly) with rigorous academic precision (so even a 50-year-old computer science professor is completely satisfied and impressed).
+Your signature teaching style combines 5th-grade simplicity (so any beginner understands instantly) with rigorous academic precision (so even a 50-year-old computer science professor is completely[...]
 
 RULES:
 1. GREETINGS: If the user says "hi", "hello", "hey", "welcome", or any simple greeting, reply EXACTLY:
@@ -48,8 +48,14 @@ RULES:
 4. Focus exclusively on Computer Networks and telecommunications.
 """
 
+    // Prefer the runtime environment secret GROQ_API_KEY, fall back to BuildConfig if not set.
+    private fun resolveApiKey(): String {
+        return System.getenv("GROQ_API_KEY")?.takeIf { it.isNotBlank() }
+            ?: try { BuildConfig.GEMINI_API_KEY } catch (_: Throwable) { "" }
+    }
+
     suspend fun generateAnswer(userPrompt: String, topicContext: String? = null): String = withContext(Dispatchers.IO) {
-        val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (_: Throwable) { "" }
+        val apiKey = resolveApiKey()
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             throw IllegalArgumentException("API key not configured")
         }
@@ -113,7 +119,7 @@ RULES:
     }
 
     suspend fun transcribeAudio(audioBase64: String, mimeType: String = "audio/wav"): String = withContext(Dispatchers.IO) {
-        val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (_: Throwable) { "" }
+        val apiKey = resolveApiKey()
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             throw IllegalArgumentException("API key not configured")
         }
@@ -163,7 +169,7 @@ RULES:
     }
 
     suspend fun generateLiveVoiceResponse(userAudioBase64OrText: String, isAudioInput: Boolean = false): String = withContext(Dispatchers.IO) {
-        val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (_: Throwable) { "" }
+        val apiKey = resolveApiKey()
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             throw IllegalArgumentException("API key not configured")
         }
@@ -185,10 +191,10 @@ RULES:
 
         val jsonBody = JSONObject().apply {
             put("systemInstruction", JSONObject().apply {
-                put("parts", JSONArray().put(JSONObject().put("text", "You are NetChat Live Assistant. Answer computer network questions in 2-3 short, clear sentences ideal for live spoken response.")))
+                put("parts", JSONArray().put(JSONObject().put("text", "You are NetChat Live Assistant. Answer computer network questions in 2-3 short, clear sentences ideal for live spoken respon[...]") ))
             })
             put("contents", JSONArray().put(JSONObject().apply {
-                put("parts", partsArray)
+                put("parts", JSONArray().put(partsArray))
             }))
         }
 
@@ -225,7 +231,7 @@ RULES:
         mimeType: String = "video/mp4",
         userPrompt: String = "Analyze this video for key information."
     ): String = withContext(Dispatchers.IO) {
-        val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (_: Throwable) { "" }
+        val apiKey = resolveApiKey()
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             throw IllegalArgumentException("API key not configured")
         }
@@ -244,8 +250,7 @@ RULES:
                     1. 🎬 **Video Summary & Overview**
                     2. 📌 **Key Concepts & Timestamps**
                     3. ⚙️ **Technical Protocols & Details Covered**
-                    4. 💡 **Exam & Viva Q&A Takeaways**
-                """.trimIndent())))
+                    4. 💡 **Exam & Viva Q&A Takeaways"".trimIndent())))
             })
             put("contents", JSONArray().put(JSONObject().apply {
                 put("parts", JSONArray().apply {
@@ -303,7 +308,7 @@ RULES:
         prompt: String,
         imageSize: String = "1K" // "1K", "2K", "4K"
     ): String = withContext(Dispatchers.IO) {
-        val apiKey = try { BuildConfig.GEMINI_API_KEY } catch (_: Throwable) { "" }
+        val apiKey = resolveApiKey()
         if (apiKey.isBlank() || apiKey == "MY_GEMINI_API_KEY") {
             throw IllegalArgumentException("API key not configured")
         }
@@ -359,4 +364,3 @@ RULES:
         }
     }
 }
-
