@@ -20,25 +20,31 @@ jobs:
         java-version: '17'
         cache: gradle
 
-    # Safe Step: Injects your secret key securely right into the file before building
+    # Safe Step: Dynamically searches and updates PLACEHOLDER_KEY across directories securely
     - name: Inject Secure Groq API Key
       run: |
-        sed -i 's/"PLACEHOLDER_KEY"/${{ secrets.GROQ_API_KEY }}/g' app/src/main/java/com/example/data/remote/GeminiApiClient.kt
+        find . -name "GeminiApiClient.kt" -exec sed -i 's/"PLACEHOLDER_KEY"/"${{ secrets.GROQ_API_KEY }}"/g' {} +
 
-    # Crucial Fix Step: Forces Gradle properties to safely link Compose Compiler inside modern Kotlin compiler chains
+    # Dynamic Step: Configures properties across all available nested root layers
     - name: Configure Gradle Compiler Properties Bypass
       run: |
-        echo "android.experimental.lifecycle.compose=true" >> local.properties
-        echo "kotlin.experimental.tryK2=false" >> local.properties
+        find . -maxdepth 2 -type d -exec sh -c 'echo "android.experimental.lifecycle.compose=true" >> {}/local.properties 2>/dev/null || true' \;
+        find . -maxdepth 2 -type d -exec sh -c 'echo "kotlin.experimental.tryK2=false" >> {}/local.properties 2>/dev/null || true' \;
 
-    - name: Grant Execute Permission for Gradle
-      run: chmod +x gradlew
+    # Robust Step: Generates a fresh gradlew wrapper locally if original execution file goes missing
+    - name: Verify or Generate Gradle Wrapper Script
+      run: |
+        if [ ! -f gradlew ]; then
+          echo "Gradle wrapper missing from root. Building fresh script execution trees..."
+          gradle wrapper --gradle-version 8.5
+        fi
+        chmod +x gradlew
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon
+      run: ./gradlew assembleDebug --no-daemon --stacktrace
 
     - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: NetChat-Unlimited-CN-APK
-        path: app/build/outputs/apk/debug/*.apk
+        path: "**/build/outputs/apk/debug/*.apk"
