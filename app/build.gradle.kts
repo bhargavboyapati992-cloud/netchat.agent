@@ -74,11 +74,15 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
+}
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
   kotlinOptions {
     jvmTarget = "11"
-    freeCompilerArgs += "-P"
-    freeCompilerArgs += "plugin:androidx.compose.compiler.plugins.kotlin:experimentalStrongSkipping=true"
+    freeCompilerArgs += listOf(
+      "-P",
+      "plugin:androidx.compose.compiler.plugins.kotlin:experimentalStrongSkipping=true"
+    )
   }
 }
 
