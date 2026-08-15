@@ -19,27 +19,27 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    # Safe Step: Dynamically searches and updates PLACEHOLDER_KEY across directories securely
+    # Secure Step: Dynamically replaces target PLACEHOLDER_KEY with your vault hidden key
     - name: Inject Secure Groq API Key
       run: |
         find . -name "GeminiApiClient.kt" -exec sed -i 's/"PLACEHOLDER_KEY"/${{ secrets.GROQ_API_KEY }}/g' {} +
 
-    # Robust Step: Configures standard properties and strips incompatible plugin components dynamically 
+    # Compiler Patch Step: Injects exact compatibility overrides strictly into all local.properties directories
     - name: Configure Gradle Compiler Properties Bypass
       run: |
-        find . -maxdepth 2 -type d -exec sh -c 'echo "android.experimental.lifecycle.compose=true" >> {}/local.properties 2>/dev/null || true' \;
-        find . -maxdepth 2 -type d -exec sh -c 'echo "kotlin.experimental.tryK2=false" >> {}/local.properties 2>/dev/null || true' \;
+        find . -maxdepth 3 -type d -exec sh -c 'echo "android.experimental.lifecycle.compose=true" >> {}/local.properties 2>/dev/null || true' \;
+        find . -maxdepth 3 -type d -exec sh -c 'echo "kotlin.experimental.tryK2=false" >> {}/local.properties 2>/dev/null || true' \;
+        find . -maxdepth 3 -type d -exec sh -c 'echo "org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8" >> {}/gradle.properties 2>/dev/null || true' \;
 
-    # Core Fix: Force clear caching configuration elements to override VersionCheck limitations
-    - name: Clean and Build with Safe Native Wrapper 
+    # Version Shield Step: Force installs a guaranteed backward-compatible stable Gradle Wrapper 8.5 to stop modern 9.7 crashes
+    - name: Setup Force-Downgrade Stable Gradle Wrapper
       run: |
-        if [ -f gradlew ]; then
-          chmod +x gradlew
-          ./gradlew clean assembleDebug --no-daemon --stacktrace -Pandroid.experimental.lifecycle.compose=true
-        else
-          echo "Building local execution wrapper structures using standard safe runner..."
-          gradle clean assembleDebug --no-daemon --stacktrace -Pandroid.experimental.lifecycle.compose=true
-        fi
+        gradle wrapper --gradle-version 8.5 --distribution-type bin
+        chmod +x gradlew
+
+    # Compilation Step: Standard safe clean production execution
+    - name: Build Secure Unlimited Debug APK
+      run: ./gradlew clean assembleDebug --no-daemon --stacktrace
 
     - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
