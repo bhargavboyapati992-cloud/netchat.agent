@@ -12,12 +12,14 @@ plugins {
 
 android {
   namespace = "com.example"
-  compileSdk = 35
+  
+  // ⚡ FIXED: Upgraded compileSdk to 36 to satisfy the core-ktx requirements perfectly
+  compileSdk = 36
 
   defaultConfig {
     applicationId = "com.aistudio.netchat.aadebd"
     minSdk = 24
-    targetSdk = 35
+    targetSdk = 36 // Locked seamlessly with compile SDK standards
     versionCode = 1
     versionName = "1.0"
 
