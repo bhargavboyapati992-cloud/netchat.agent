@@ -46,9 +46,18 @@ jobs:
         # Run clean production build execution with correct matching compiler
         ./gradlew clean assembleDebug --no-daemon --no-configuration-cache
 
-    # Flexible Artifact Collector
+    # 🛠️ Aggressive Collector: Copies the generated APK straight to the workspace root so upload-artifact can't miss it
+    - name: Stage Generated APK
+      run: |
+        mkdir -p final-apk-staged
+        find . -name "*.apk" -exec cp {} final-apk-staged/ \;
+        echo "Staged files inside folder:"
+        ls -la final-apk-staged/
+
+    # Guaranteed Upload Step
     - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: NetChat-Unlimited-CN-APK
-        path: "**/build/outputs/apk/debug/*.apk"
+        path: final-apk-staged/*.apk
+        if-no-files-found: error # Force build to show red error if it fails to find the staged file
