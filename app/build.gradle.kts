@@ -12,7 +12,7 @@ plugins {
 
 android {
   namespace = "com.example"
-  compileSdk = 35 // Standard stable layout profile boundary check compile targets
+  compileSdk = 35
 
   defaultConfig {
     applicationId = "com.aistudio.netchat.aadebd"
@@ -23,7 +23,7 @@ android {
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-    // Safe Injected Field Hook mapping Groq API key values directly to dynamic layout strings context
+    // Safe Injected Field Hook mapping Groq API key values directly
     val geminiKeyFromEnv: String? = System.getenv("GROQ_API_KEY")
     val geminiApiKeyValue: String = geminiKeyFromEnv ?: (project.findProperty("GEMINI_API_KEY") as? String) ?: "MY_GEMINI_API_KEY"
     buildConfigField("String", "GEMINI_API_KEY", "\"${geminiApiKeyValue.replace("\"","\\\"")}\"")
@@ -65,9 +65,6 @@ android {
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-  }
-  kotlinOptions {
-    jvmTarget = "17"
   }
   buildFeatures {
     compose = true
