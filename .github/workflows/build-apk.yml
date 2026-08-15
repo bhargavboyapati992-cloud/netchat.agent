@@ -19,40 +19,40 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    # Secure Injection: Replaces only the inside text while keeping the outer double quotes intact
-    - name: Inject Secure Groq API Key from Secrets
-      run: |
-        find . -name "GeminiApiClient.kt" -exec sed -i 's/ENV_GROQ_API_KEY_PLACEHOLDER/${{ secrets.GROQ_API_KEY }}/g' {} +
-
-    # Dynamic Path Solver & Force Upgrade to Gradle 9.3.1 to match your AGP 9.1.1 requirements
-    - name: Locate Gradle Root and Build APK
+    # Safe Step: Directly injects the secure secret key into local.properties for the compiler
+    - name: Configure Secure Properties Setup
       run: |
         GRADLE_ROOT=$(find . -name "gradlew" -printf '%h\n' -print -quit)
-        if [ -z "$GRADLE_ROOT" ]; then
-          GRADLE_ROOT="."
-        fi
-        
-        echo "Found gradle root at: $GRADLE_ROOT"
+        if [ -z "$GRADLE_ROOT" ]; then GRADLE_ROOT="."; fi
         cd "$GRADLE_ROOT"
         
-        # Force upgrading wrapper configuration to 9.3.1 to avoid version errors
-        gradle wrapper --gradle-version 9.3.1 --distribution-type bin
-        chmod +x gradlew
-        
-        # Inject structural compiler parameters directly into local properties
         echo "android.experimental.lifecycle.compose=true" >> local.properties
         echo "kotlin.experimental.tryK2=false" >> local.properties
         
-        # Run clean production build execution with correct matching compiler
-        ./gradlew clean assembleDebug --no-daemon --no-configuration-cache
+        # Injecting the secret safely as a system property text line
+        echo "groq.api.key=${{ secrets.GROQ_API_KEY }}" >> local.properties
 
-    # 🛠️ Aggressive Collector: Copies the generated APK straight to the workspace root so upload-artifact can't miss it
+    # Dynamic Path Solver & Force Upgrade to Gradle 9.3.1 to match your AGP requirements
+    - name: Locate Gradle Root and Build APK
+      run: |
+        GRADLE_ROOT=$(find . -name "gradlew" -printf '%h\n' -print -quit)
+        if [ -z "$GRADLE_ROOT" ]; then GRADLE_ROOT="."; fi
+        cd "$GRADLE_ROOT"
+        
+        gradle wrapper --gradle-version 9.3.1 --distribution-type bin
+        chmod +x gradlew
+        
+        # Run clean production build execution
+        ./gradlew clean assembleDebug --no-daemon --no-configuration-cache
+      env:
+        # Exposing the vault secret safely to the environment runner context matrix
+        GROQ_API_KEY_ENV: ${{ secrets.GROQ_API_KEY }}
+
+    # Aggressive Collector
     - name: Stage Generated APK
       run: |
         mkdir -p final-apk-staged
         find . -name "*.apk" -exec cp {} final-apk-staged/ \;
-        echo "Staged files inside folder:"
-        ls -la final-apk-staged/
 
     # Guaranteed Upload Step
     - name: Upload Finished APK Artifact
@@ -60,4 +60,4 @@ jobs:
       with:
         name: NetChat-Unlimited-CN-APK
         path: final-apk-staged/*.apk
-        if-no-files-found: error # Force build to show red error if it fails to find the staged file
+        if-no-files-found: error
