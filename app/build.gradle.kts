@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
   alias(libs.plugins.android.application)
@@ -74,16 +75,6 @@ android {
     buildConfig = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
-}
-
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-  kotlinOptions {
-    jvmTarget = "11"
-    freeCompilerArgs += listOf(
-      "-P",
-      "plugin:androidx.compose.compiler.plugins.kotlin:experimentalStrongSkipping=true"
-    )
-  }
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files
