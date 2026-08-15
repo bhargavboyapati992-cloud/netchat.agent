@@ -21,6 +21,15 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // Inject GEMINI_API_KEY into BuildConfig at build time.
+    // Preference order:
+    // 1) Runtime environment variable GROQ_API_KEY available on the build runner
+    // 2) Project property "GEMINI_API_KEY" (e.g., from .env via the Secrets Gradle Plugin)
+    // 3) Fallback placeholder "MY_GEMINI_API_KEY"
+    val geminiKeyFromEnv: String? = System.getenv("GROQ_API_KEY")
+    val geminiApiKeyValue: String = geminiKeyFromEnv ?: (project.findProperty("GEMINI_API_KEY") as? String) ?: "MY_GEMINI_API_KEY"
+    buildConfigField("String", "GEMINI_API_KEY", "\"${geminiApiKeyValue.replace("\"","\\\"")}\"")
   }
 
   signingConfigs {
