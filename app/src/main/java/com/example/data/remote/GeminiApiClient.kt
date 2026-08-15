@@ -1,7 +1,7 @@
 package com.example.data.remote
 
 import android.util.Log
-import com.example.BuildConfig // Strictly imports the secure auto-generated build keys container
+import com.example.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -15,8 +15,8 @@ import java.util.concurrent.TimeUnit
 object GeminiApiClient {
     private const val TAG = "GeminiApiClient"
     
-    // Reads safely from the hidden BuildConfig field injected by GitHub Actions at runtime
-    private val GROQ_API_KEY = BuildConfig.GROQ_API_KEY
+    // Links variable precisely to solve the unresolved reference compile issue
+    private val GROQ_API_KEY = BuildConfig.GEMINI_API_KEY
     private const val GROQ_URL = "https://groq.com"
 
     private val client = OkHttpClient.Builder()
@@ -50,7 +50,7 @@ RULES:
 """
 
     suspend fun generateAnswer(userPrompt: String, topicContext: String? = null): String = withContext(Dispatchers.IO) {
-        if (GROQ_API_KEY.isBlank()) {
+        if (GROQ_API_KEY.isBlank() || GROQ_API_KEY == "MY_GEMINI_API_KEY") {
             return@withContext "Error: Groq API Key configuration missing from BuildConfig metadata fields."
         }
 
