@@ -13,17 +13,16 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    # Java 17 updates for modern compiler structures
     - name: Set up JDK 17
       uses: actions/setup-java@v5
       with:
         distribution: 'temurin'
         java-version: '17'
 
-    # Secure Step: Dynamically replaces placeholder text with your vault hidden key
-    - name: Inject Secure Groq API Key
+    # Secure Injection: Replaces only the inside text while keeping the outer double quotes intact
+    - name: Inject Secure Groq API Key from Secrets
       run: |
-        find . -name "GeminiApiClient.kt" -exec sed -i 's/"PLACEHOLDER_KEY"/${{ secrets.GROQ_API_KEY }}/g' {} +
+        find . -name "GeminiApiClient.kt" -exec sed -i 's/ENV_GROQ_API_KEY_PLACEHOLDER/${{ secrets.GROQ_API_KEY }}/g' {} +
 
     # Dynamic Path Solver & Force Upgrade to Gradle 9.3.1 to match your AGP 9.1.1 requirements
     - name: Locate Gradle Root and Build APK
