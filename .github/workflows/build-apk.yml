@@ -1,9 +1,7 @@
-name: Build Android APK
+name: NetChat Unlimited APK Builder
 
 on:
   push:
-    branches: [ "main", "master" ]
-  pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
@@ -18,14 +16,29 @@ jobs:
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
         distribution: 'temurin'
+        java-version: '17'
+        cache: gradle
+
+    # Safe Step: Injects your secret key securely right into the file before building
+    - name: Inject Secure Groq API Key
+      run: |
+        sed -i 's/"PLACEHOLDER_KEY"/${{ secrets.GROQ_API_KEY }}/g' app/src/main/java/com/example/data/remote/GeminiApiClient.kt
+
+    # Crucial Fix Step: Forces Gradle properties to safely link Compose Compiler inside modern Kotlin compiler chains
+    - name: Configure Gradle Compiler Properties Bypass
+      run: |
+        echo "android.experimental.lifecycle.compose=true" >> local.properties
+        echo "kotlin.experimental.tryK2=false" >> local.properties
+
+    - name: Grant Execute Permission for Gradle
+      run: chmod +x gradlew
 
     - name: Build Debug APK
-      run: gradle :app:assembleDebug --no-daemon
+      run: ./gradlew assembleDebug --no-daemon
 
-    - name: Upload APK Artifact
+    - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: NetChat-APK
-        path: app/build/outputs/apk/debug/app-debug.apk
+        name: NetChat-Unlimited-CN-APK
+        path: app/build/outputs/apk/debug/*.apk
