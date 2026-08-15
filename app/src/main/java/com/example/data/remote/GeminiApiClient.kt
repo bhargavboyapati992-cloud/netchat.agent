@@ -14,7 +14,8 @@ import java.util.concurrent.TimeUnit
 object GeminiApiClient {
     private const val TAG = "GeminiApiClient"
     
-    private const val GROQ_API_KEY = SECRET_GROQ_KEY_INJECT
+    // GitHub Actions విల్ ఇంజెక్ట్ దిస్ సెక్యూర్లీ విత్ ప్రాపర్ కొటేషన్స్
+    private const val GROQ_API_KEY = "ENV_GROQ_API_KEY_PLACEHOLDER"
     private const val GROQ_URL = "https://groq.com"
 
     private val client = OkHttpClient.Builder()
@@ -48,7 +49,7 @@ RULES:
 """
 
     suspend fun generateAnswer(userPrompt: String, topicContext: String? = null): String = withContext(Dispatchers.IO) {
-        if (GROQ_API_KEY.isBlank()) {
+        if (GROQ_API_KEY.isBlank() || GROQ_API_KEY == "ENV_GROQ_API_KEY_PLACEHOLDER") {
             return@withContext "Error: Groq API Key configuration error inside the build matrix."
         }
 
