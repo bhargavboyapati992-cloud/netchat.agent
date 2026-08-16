@@ -23,10 +23,9 @@ jobs:
     - name: Setup Android SDK and Accept Licenses
       uses: android-actions/setup-android@v3
 
-    # Direct Root Compilation: No clumsy search scripts, directly executes from the root tracking tree
+    # Direct Root Compilation: Safely upgrades and triggers the assemble debug task
     - name: Run Direct Production Build Execution
       run: |
-        # Upgrade gradle structure safely inside main workspace directory
         gradle wrapper --gradle-version 9.3.1 --distribution-type bin
         chmod +x gradlew
         
@@ -37,13 +36,15 @@ jobs:
         # Build clean assemble debug APK
         ./gradlew clean assembleDebug --no-daemon --no-configuration-cache
 
-    # Collector Step: Grabs the output APK and stages it safely
-    - name: Stage Generated APK
+    # 🛠️ GURANTEED RECURSIVE ZIPPER: Finds the generated APK anywhere in the sub-directories and zips it directly to the root
+    - name: Stage and Zip Finished APK
       run: |
         mkdir -p final-apk-staged
-        find . -name "*.apk" -exec cp {} final-apk-staged/ \;
+        find . -name "*.apk" -not -path "*/final-apk-staged/*" -exec cp {} final-apk-staged/ \;
+        echo "Verifying copied APK files inside staging folder:"
+        ls -la final-apk-staged/
 
-    # Guaranteed Upload Step
+    # Guaranteed Upload Step: Points directly to the staged workspace directory
     - name: Upload Finished APK Artifact
       uses: actions/upload-artifact@v4
       with:
