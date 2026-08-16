@@ -12,23 +12,17 @@ plugins {
 
 android {
   namespace = "com.example"
-  
-  // ⚡ FIXED: Upgraded compileSdk to 36 to satisfy the core-ktx requirements perfectly
   compileSdk = 36
 
   defaultConfig {
     applicationId = "com.aistudio.netchat.aadebd"
     minSdk = 24
-    targetSdk = 36 // Locked seamlessly with compile SDK standards
+    targetSdk = 36
     versionCode = 1
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-    // Safe Injected Field Hook mapping Groq API key values directly
-    val geminiKeyFromEnv: String? = System.getenv("GROQ_API_KEY")
-    val geminiApiKeyValue: String = geminiKeyFromEnv ?: (project.findProperty("GEMINI_API_KEY") as? String) ?: "MY_GEMINI_API_KEY"
-    buildConfigField("String", "GEMINI_API_KEY", "\"${geminiApiKeyValue.replace("\"","\\\"")}\"")
+    buildConfigField("String", "GEMINI_API_KEY", "\"UN-USED\"")
   }
 
   signingConfigs {
