@@ -23,17 +23,10 @@ jobs:
     - name: Setup Android SDK and Accept Licenses
       uses: android-actions/setup-android@v3
 
-    # Dynamic Path Solver & Force Upgrade to Gradle 9.3.1 to match your AGP requirements
-    - name: Locate Gradle Root and Build APK
+    # Direct Root Compilation: No clumsy search scripts, directly executes from the root tracking tree
+    - name: Run Direct Production Build Execution
       run: |
-        GRADLE_ROOT=$(find . -name "gradlew" -printf '%h\n' -print -quit)
-        if [ -z "$GRADLE_ROOT" ]; then
-          GRADLE_ROOT="."
-        fi
-        
-        echo "Found gradle root at: $GRADLE_ROOT"
-        cd "$GRADLE_ROOT"
-        
+        # Upgrade gradle structure safely inside main workspace directory
         gradle wrapper --gradle-version 9.3.1 --distribution-type bin
         chmod +x gradlew
         
@@ -41,10 +34,10 @@ jobs:
         echo "android.experimental.lifecycle.compose=true" >> local.properties
         echo "kotlin.experimental.tryK2=false" >> local.properties
         
-        # Run clean production build execution seamlessly
+        # Build clean assemble debug APK
         ./gradlew clean assembleDebug --no-daemon --no-configuration-cache
 
-    # Aggressive Collector: Moves the final APK to workspace root safely
+    # Collector Step: Grabs the output APK and stages it safely
     - name: Stage Generated APK
       run: |
         mkdir -p final-apk-staged
