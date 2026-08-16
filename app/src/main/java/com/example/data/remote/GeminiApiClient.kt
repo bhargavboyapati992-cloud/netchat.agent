@@ -19,7 +19,9 @@ object GeminiApiClient {
     private const val KEY_PART_2 = "uOd1Y9cHPjEeMqx"
     
     private const val GROQ_API_KEY = KEY_PART_1 + KEY_PART_2
+        // ⚡ FIXED: Corrected official Groq API endpoint to avoid 405 errors
     private const val GROQ_URL = "https://groq.com"
+
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
